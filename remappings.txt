@@ -1,0 +1,7 @@
+@chainlink/=node_modules/@chainlink/
+@eth-optimism/=node_modules/@eth-optimism/
+@openzeppelin/=node_modules/@openzeppelin/
+flashliquidity-acs/=node_modules/flashliquidity-acs
+hardhat-deploy/=node_modules/hardhat-deploy/
+hardhat/=node_modules/hardhat/
+forge-std/=lib/forge-std/src/
