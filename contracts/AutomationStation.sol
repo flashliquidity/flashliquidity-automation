@@ -71,8 +71,8 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function dismantle() external onlyGovernor {
-        if (s_upkeepIDs.length > 0) revert AutomationStation__CannotDismantle();
         uint256 stationUpkeepID = s_stationUpkeepId;
+        if(stationUpkeepID == 0 || s_upkeepIDs.length > 0) revert AutomationStation__CannotDismantle();
         i_registry.cancelUpkeep(stationUpkeepID);
         emit StationDismantled(stationUpkeepID);
     }
