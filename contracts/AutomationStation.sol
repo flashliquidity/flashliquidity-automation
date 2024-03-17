@@ -20,6 +20,7 @@ import {IAutomationStation} from "./interfaces/IAutomationStation.sol";
 contract AutomationStation is IAutomationStation, AutomationCompatibleInterface, Governable {
     using SafeERC20 for IERC20;
 
+    error AutomationStation__AlreadyInitialized();
     error AutomationStation__NoRegisteredUpkeep();
     error AutomationStation__InconsistentParamsLength();
     error AutomationStation__RefuelNotNeeded();
@@ -54,6 +55,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function initialize(uint96 initializationAmount) external onlyGovernor {
+        if(s_stationUpkeepId > 0) revert AutomationStation__AlreadyInitialized();
         AutomationRegistrarInterface.RegistrationParams memory params = AutomationRegistrarInterface.RegistrationParams({
             name : "AutomationStation",
             encryptedEmail : new bytes(0),
