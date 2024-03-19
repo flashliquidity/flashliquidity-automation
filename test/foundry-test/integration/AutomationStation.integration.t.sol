@@ -16,12 +16,16 @@ contract AutomationStationIntegrationTest is Test {
     address governor = address(0x95E05C9870718cb171C04080FDd186571475027E);
     address verifierProxy = address(0x478Aa2aC9F6D65F84e09D9185d126c3a17c2a93C);
     address bob = makeAddr("bob");
-    uint32 priceMaxStaleness = 86400;
+    uint96 refuelAmount = 2 ether;
+    uint96 stationUpkeepMinBalance = 1 ether;
+    uint32 minDelayNextRefuel = 6 hours;
     uint256 polygonFork;
 
     function setUp() public {
         polygonFork = vm.createSelectFork("https://rpc.ankr.com/polygon");
-        station = new AutomationStation(governor, linkToken, registry, registrar);
+        station = new AutomationStation(
+            governor, address(linkToken), registry, registrar, refuelAmount, stationUpkeepMinBalance, minDelayNextRefuel
+        );
         vm.prank(registry);
         IERC20(linkToken).transfer(governor, 100 ether);
     }
@@ -65,7 +69,7 @@ contract AutomationStationIntegrationTest is Test {
         (bool upkeepNeeded, bytes memory performData) = station.checkUpkeep(new bytes(0));
         (uint256 upkeepIndex) = abi.decode(performData, (uint256));
         assertEq(upkeepIndex, 0);
-        station.setStationUpkeepMinBalance(6 ether);
+        station.setRefuelConfig(2 ether, 6 ether, 6 hours);
         (upkeepNeeded, performData) = station.checkUpkeep(new bytes(0));
         (upkeepIndex) = abi.decode(performData, (uint256));
         assertEq(upkeepIndex, type(uint256).max);

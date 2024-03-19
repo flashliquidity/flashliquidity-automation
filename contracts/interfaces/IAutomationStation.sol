@@ -13,16 +13,14 @@ interface IAutomationStation {
     function dismantle() external;
 
     /**
-     * @dev Sets the amount of LINK tokens used for refueling upkeeps.
-     * @param refuelAmount The new refuel amount in LINK tokens.
+     * @notice Updates the configuration settings for refueling upkeeps in the Automation Station.
+     * @dev Sets the new refueling configuration for the station. This includes the amount of tokens for refueling,
+     *      the minimum balance threshold for upkeeps, and the minimum delay between refuels.
+     * @param refuelAmount The amount of tokens (e.g., LINK) to be used for each refuel operation.
+     * @param stationUpkeepMinBalance The minimum balance of the station upkeep.
+     * @param minDelayNextReful The minimum time interval (in seconds) required between consecutive refuel operations.
      */
-    function setRefuelAmount(uint96 refuelAmount) external;
-
-    /**
-     * @dev Sets the minimum balance threshold for the station upkeep.
-     * @param minBalance The new minimum balance in LINK tokens.
-     */
-    function setStationUpkeepMinBalance(uint96 minBalance) external;
+    function setRefuelConfig(uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextReful) external;
 
     /**
      * @dev Forces the refuel of the station upkeep with the specified amount.
@@ -84,9 +82,14 @@ interface IAutomationStation {
     /// @return upkeepsLength The total number of upkeeps registered in this station.
     function allUpkeepsLength() external view returns (uint256 upkeepsLength);
 
-    /// @return refuelAmount The amount of LINK tokens used for refueling.
-    function getRefuelAmount() external view returns (uint96 refuelAmount);
-
-    /// @return stationUpkeepMinBalance The minimum balance required in LINK tokens for the station's upkeep.
-    function getStationUpkeepMinBalance() external view returns (uint256 stationUpkeepMinBalance);
+    /**
+     * @notice Retrieves the current refueling configuration settings for the Automation Station.
+     * @return refuelAmount The amount of LINK tokens currently set for each refuel operation.
+     * @return stationUpkeepMinBalance The current minimum balance in LINK tokens that an upkeep should maintain.
+     * @return minDelayNextRefuel The current minimum time interval (in seconds) required between consecutive refuel operations.
+     */
+    function getRefuelConfig()
+        external
+        view
+        returns (uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextRefuel);
 }
