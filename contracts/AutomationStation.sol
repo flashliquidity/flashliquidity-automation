@@ -72,7 +72,6 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             stationUpkeepMinBalance: stationUpkeepMinBalance,
             minDelayNextRefuel: minDelayNextRefuel
         });
-        i_linkToken.approve(address(i_registrar), type(uint256).max);
     }
 
     /// @inheritdoc IAutomationStation
@@ -198,6 +197,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             revert AutomationStation__TooEarlyForNextRefuel();
         }
         s_lastRefuelTimestamp[upkeepID] = block.timestamp;
+        i_linkToken.approve(address(i_registry), config.refuelAmount);
         i_registry.addFunds(s_upkeepIDs[upkeepIndex], config.refuelAmount);
     }
 
@@ -211,6 +211,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         internal
         returns (uint256 upkeepID)
     {
+        i_linkToken.approve(address(i_registrar), params.amount);
         upkeepID = i_registrar.registerUpkeep(params);
         if (upkeepID == 0) revert AutomationStation__UpkeepRegistrationFailed();
         emit UpkeepRegistered(upkeepID);
