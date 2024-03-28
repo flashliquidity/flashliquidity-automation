@@ -19,21 +19,56 @@ contract AutomationStationIntegrationTest is Test {
     uint96 refuelAmount = 2 ether;
     uint96 stationUpkeepMinBalance = 1 ether;
     uint32 minDelayNextRefuel = 6 hours;
-    uint256 polygonFork;
+    bytes4 registerUpkeepSelector = 0x3f678e11;
+    bytes registrationParams;
+
+    struct RegistrationParams {
+        string name;
+        bytes encryptedEmail;
+        address upkeepContract;
+        uint32 gasLimit;
+        address adminAddress;
+        uint8 triggerType;
+        bytes checkData;
+        bytes triggerConfig;
+        bytes offchainConfig;
+        uint96 amount;
+    }
 
     function setUp() public {
-        polygonFork = vm.createSelectFork("https://rpc.ankr.com/polygon");
+        vm.createSelectFork("https://rpc.ankr.com/polygon");
         station = new AutomationStation(
-            governor, address(linkToken), registry, registrar, refuelAmount, stationUpkeepMinBalance, minDelayNextRefuel
+            governor,
+            address(linkToken),
+            registrar,
+            registerUpkeepSelector,
+            refuelAmount,
+            stationUpkeepMinBalance,
+            minDelayNextRefuel
+        );
+        registrationParams = abi.encode(
+            RegistrationParams({
+                name: "test",
+                encryptedEmail: new bytes(0),
+                upkeepContract: address(station),
+                gasLimit: 500000,
+                adminAddress: address(station),
+                triggerType: 0,
+                checkData: new bytes(0),
+                triggerConfig: new bytes(0),
+                offchainConfig: new bytes(0),
+                amount: 5 ether
+            })
         );
         vm.prank(registry);
         IERC20(linkToken).transfer(governor, 100 ether);
-    }
-
-    function testIntegration__AutomationStation_initialize() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.initialize(5 ether);
+        station.initialize(5 ether, registrationParams);
+        (bool success, bytes memory returnData) =
+            registry.staticcall(abi.encodeWithSignature("getForwarder(uint256)", station.getStationUpkeepID()));
+        if (!success) revert();
+        station.setForwarder(abi.decode(returnData, (address)));
         vm.stopPrank();
         assertNotEq(station.getStationUpkeepID(), 0);
     }
@@ -41,7 +76,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_addUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.addUpkeep(address(this), 5 ether, 500000, 0, "test", new bytes(0), new bytes(0), new bytes(0));
+        station.createUpkeep(5 ether, registrationParams);
         vm.stopPrank();
         assertEq(station.allUpkeepsLength(), 1);
         assertNotEq(station.getUpkeepIdAtIndex(0), 0);
@@ -50,7 +85,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_cancelAndWithdrawUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.addUpkeep(address(this), 5 ether, 500000, 0, "test", new bytes(0), new bytes(0), new bytes(0));
+        station.createUpkeep(5 ether, registrationParams);
         uint256[] memory upkeepIDs = new uint256[](1);
         upkeepIDs[0] = station.getUpkeepIdAtIndex(0);
         station.removeUpkeep(0);
@@ -63,15 +98,14 @@ contract AutomationStationIntegrationTest is Test {
 
     function testIntegration__AutomationStation_checkUpkeep() public {
         vm.startPrank(governor);
-        IERC20(linkToken).transfer(address(station), 6 ether);
-        station.initialize(5 ether);
-        station.addUpkeep(address(this), 1 ether, 5000000, 0, "test", new bytes(0), new bytes(0), new bytes(0));
+        IERC20(linkToken).transfer(address(station), 8 ether);
+        station.createUpkeep(5 ether, registrationParams);
         (bool upkeepNeeded, bytes memory performData) = station.checkUpkeep(new bytes(0));
-        (uint256 upkeepIndex) = abi.decode(performData, (uint256));
-        assertEq(upkeepIndex, 0);
+        assertFalse(upkeepNeeded);
         station.setRefuelConfig(2 ether, 6 ether, 6 hours);
         (upkeepNeeded, performData) = station.checkUpkeep(new bytes(0));
-        (upkeepIndex) = abi.decode(performData, (uint256));
+        uint256 upkeepIndex = abi.decode(performData, (uint256));
+        assertTrue(upkeepNeeded);
         assertEq(upkeepIndex, type(uint256).max);
         vm.stopPrank();
     }

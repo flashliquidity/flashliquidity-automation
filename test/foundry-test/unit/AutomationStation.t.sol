@@ -14,17 +14,19 @@ contract AutomationStationTest is Test {
     address governor = makeAddr("governor");
     address bob = makeAddr("bob");
     address registrar = makeAddr("registrar");
-    address registry = makeAddr("registry");
+    bytes4 registerUpkeepSelector = 0x3f678e11;
 
     function setUp() public {
         linkToken = new ERC20Mock("MockLINK", "LINK");
         linkToken.mintTo(governor, 100 ether);
-        station = new AutomationStation(governor, address(linkToken), registry, registrar, 2 ether, 1 ether, 6 hours);
+        station = new AutomationStation(
+            governor, address(linkToken), registrar, registerUpkeepSelector, 2 ether, 1 ether, 6 hours
+        );
     }
 
     function test__AutomationStation_initializeOnlyGovernor() public {
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
-        station.initialize(5 ether);
+        station.initialize(5 ether, new bytes(0));
     }
 
     function test__AutomationStation_dismantleOnlyGovernor() public {
@@ -52,7 +54,7 @@ contract AutomationStationTest is Test {
 
     function test__AutomationStation_addUpkeepOnlyGovernor() public {
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
-        station.addUpkeep(bob, 5 ether, 500000, 0, "test", new bytes(0), new bytes(0), new bytes(0));
+        station.createUpkeep(5 ether, new bytes(0));
     }
 
     function test__AutomationStation_removeUpkeepOnlyGovernor() public {

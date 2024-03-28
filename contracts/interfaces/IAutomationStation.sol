@@ -5,12 +5,22 @@ pragma solidity ^0.8.0;
 interface IAutomationStation {
     /**
      * @dev Initializes the station.
-     * @param initializationAmount Amount of LINK tokens to fund the station upkeep.
+     * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
+     * @param registrationParams Encoded registration params.
      */
-    function initialize(uint96 initializationAmount) external;
+    function initialize(uint256 approveAmountLINK, bytes calldata registrationParams) external;
 
     /// @dev Dismantles the station by canceling the station upkeep.
     function dismantle() external;
+
+    /// @param forwarder The new Automation forwarder address.
+    function setForwarder(address forwarder) external;
+
+    /// @param registrar The new Automation registrar address.
+    function setRegistrar(address registrar) external;
+
+    /// @param registerUpkeepSelector The new registerUpkeep function selector of the Automation registrar.
+    function setRegisterUpkeepSelector(bytes4 registerUpkeepSelector) external;
 
     /**
      * @notice Updates the configuration settings for refueling upkeeps in the Automation Station.
@@ -23,40 +33,6 @@ interface IAutomationStation {
     function setRefuelConfig(uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextReful) external;
 
     /**
-     * @dev Forces the refuel of the station upkeep with the specified amount.
-     * @param refuelAmount The amount of LINK tokens to refuel.
-     */
-    function forceStationRefuel(uint96 refuelAmount) external;
-
-    /**
-     * @dev Register a new upkeep to the station.
-     * @param upkeepContract The contract address of the upkeep.
-     * @param amount The amount of LINK tokens to fund the upkeep.
-     * @param gasLimit The gas limit for the upkeep execution.
-     * @param triggerType The type of trigger for the upkeep.
-     * @param name The name of the upkeep.
-     * @param checkData Data for the checkUpkeep function.
-     * @param triggerConfig Configuration for the trigger.
-     * @param offchainConfig Offchain configuration for the upkeep.
-     */
-    function addUpkeep(
-        address upkeepContract,
-        uint96 amount,
-        uint32 gasLimit,
-        uint8 triggerType,
-        string memory name,
-        bytes calldata checkData,
-        bytes calldata triggerConfig,
-        bytes calldata offchainConfig
-    ) external;
-
-    /**
-     * @dev Removes an upkeep from the station by its index.
-     * @param upkeepIndex The index of the upkeep in the station's array.
-     */
-    function removeUpkeep(uint256 upkeepIndex) external;
-
-    /**
      * @dev Recovers ERC20 tokens sent to the contract.
      * @param to Address to send the recovered tokens.
      * @param tokens Array of token addresses.
@@ -65,10 +41,57 @@ interface IAutomationStation {
     function recoverERC20(address to, address[] memory tokens, uint256[] memory amounts) external;
 
     /**
+     * @dev Forces the refuel of the station upkeep with the specified amount.
+     * @param refuelAmount The amount of LINK tokens to refuel.
+     */
+    function forceStationRefuel(uint96 refuelAmount) external;
+
+    /**
+     * @dev Register a new upkeep, add its upkeepID to the s_upkeepIDs array of the station if max auto-approval has not been hit.
+     * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
+     * @param registrationParams Encoded registration params.
+     */
+    function createUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external;
+
+    /**
+     * @dev Add multiple upkeep to the s_upkeepIDs array of the station.
+     * @param upkeepIDs Array of upkeep IDs to be added.
+     */
+    function addUpkeeps(uint256[] calldata upkeepIDs) external;
+    /**
+     * @dev Removes an upkeep from the station by its index.
+     * @param upkeepIndex The index of the upkeep in the station's array.
+     */
+    function removeUpkeep(uint256 upkeepIndex) external;
+
+    /**
+     * @dev Pauses a set of upkeeps identified by their IDs.
+     * @param upkeepIDs An array of `uint256` IDs of the upkeeps to be paused.
+     */
+    function pauseUpkeeps(uint256[] calldata upkeepIDs) external;
+
+    /**
+     * @dev Unpauses a set of upkeeps identified by their IDs.
+     * @param upkeepIDs An array of `uint256` IDs of the upkeeps to be unpaused.
+     */
+    function unpauseUpkeeps(uint256[] calldata upkeepIDs) external;
+
+    /**
      * @dev Withdraws LINK tokens from canceled upkeeps.
      * @param upkeepIDs Array of upkeep IDs to withdraw funds from.
      */
     function withdrawUpkeeps(uint256[] calldata upkeepIDs) external;
+
+    /**
+     * @notice Migrate a batch of upkeeps from an old registry to a new one.
+     * @param oldRegistry The address of the current registry holding the upkeeps.
+     * @param newRegistry The address of the new registry to which the upkeeps will be transferred.
+     * @param upkeepIDs An array of `uint256` IDs representing the upkeeps to be migrated.
+     */
+    function migrateUpkeeps(address oldRegistry, address newRegistry, uint256[] calldata upkeepIDs) external;
+
+    /// @return stationUpkeepRegistry The address of the station upkeep registry.
+    function getStationUpkeepRegistry() external view returns (address stationUpkeepRegistry);
 
     /// @return stationUpkeepID The station upkeep.
     function getStationUpkeepID() external view returns (uint256 stationUpkeepID);
