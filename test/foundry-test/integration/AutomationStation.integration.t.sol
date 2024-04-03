@@ -109,4 +109,12 @@ contract AutomationStationIntegrationTest is Test {
         assertEq(upkeepIndex, type(uint256).max);
         vm.stopPrank();
     }
+
+    function testIntegration__AutomationStation_performUpkeep() public {
+        vm.expectRevert(AutomationStation.AutomationStation__NotFromForwarder.selector);
+        station.performUpkeep(abi.encode(type(uint256).max));
+        vm.prank(station.getForwarder());
+        vm.expectRevert(AutomationStation.AutomationStation__RefuelNotNeeded.selector);
+        station.performUpkeep(abi.encode(type(uint256).max));
+    }
 }

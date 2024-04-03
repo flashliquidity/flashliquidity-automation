@@ -52,7 +52,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     /// @dev An array of upkeep IDs managed by this station, allowing tracking and management of multiple upkeeps.
     uint256[] private s_upkeepIDs;
     /// @dev Unique identifier for this station's upkeep registered in the Chainlink Automation Network.
-    uint256 private s_stationUpkeepId;
+    uint256 private s_stationUpkeepID;
     /// @dev Mapping from upkeep ID to last refuel timestamp.
     mapping(uint256 upkeepID => uint256 lastRefuelTimestamp) private s_lastRefuelTimestamp;
 
@@ -84,15 +84,15 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function initialize(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
-        if (s_stationUpkeepId > 0) revert AutomationStation__AlreadyInitialized();
-        s_stationUpkeepId = _registerUpkeep(approveAmountLINK, registrationParams);
+        if (s_stationUpkeepID > 0) revert AutomationStation__AlreadyInitialized();
+        s_stationUpkeepID = _registerUpkeep(approveAmountLINK, registrationParams);
     }
 
     /// @inheritdoc IAutomationStation
     function dismantle() external onlyGovernor {
-        uint256 stationUpkeepID = s_stationUpkeepId;
+        uint256 stationUpkeepID = s_stationUpkeepID;
         if (stationUpkeepID == 0 || s_upkeepIDs.length > 0) revert AutomationStation__CannotDismantle();
-        s_stationUpkeepId = 0;
+        s_stationUpkeepID = 0;
         _getStationUpkeepRegistry().cancelUpkeep(stationUpkeepID);
         emit StationDismantled(stationUpkeepID);
     }
@@ -140,7 +140,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function forceStationRefuel(uint96 refuelAmount) external onlyGovernor {
-        _getStationUpkeepRegistry().addFunds(s_stationUpkeepId, refuelAmount);
+        _getStationUpkeepRegistry().addFunds(s_stationUpkeepID, refuelAmount);
     }
 
     /// @inheritdoc IAutomationStation
@@ -227,11 +227,12 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         if (msg.sender != address(forwarder)) revert AutomationStation__NotFromForwarder();
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
         uint256 upkeepIndex = abi.decode(performData, (uint256));
+        uint256 stationUpkeepID = s_stationUpkeepID;
         uint256 upkeepID;
         uint256 minBalance;
         RefuelConfig memory config = s_refuelConfig;
         if (upkeepIndex == type(uint256).max) {
-            upkeepID = s_stationUpkeepId;
+            upkeepID = s_stationUpkeepID;
             minBalance = config.stationUpkeepMinBalance;
         } else {
             upkeepID = s_upkeepIDs[upkeepIndex];
@@ -241,9 +242,9 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
             revert AutomationStation__TooEarlyForNextRefuel();
         }
-        s_lastRefuelTimestamp[upkeepID] = block.timestamp;
+        if (stationUpkeepID != upkeepID) s_lastRefuelTimestamp[upkeepID] = block.timestamp;
         i_linkToken.approve(address(registry), config.refuelAmount);
-        registry.addFunds(s_upkeepIDs[upkeepIndex], config.refuelAmount);
+        registry.addFunds(upkeepID, config.refuelAmount);
     }
 
     /**
@@ -274,7 +275,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         uint256 upkeepsLen = s_upkeepIDs.length;
         uint256 upkeepID;
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
-        if (registry.getBalance(s_stationUpkeepId) <= s_refuelConfig.stationUpkeepMinBalance) {
+        if (registry.getBalance(s_stationUpkeepID) <= s_refuelConfig.stationUpkeepMinBalance) {
             return (true, abi.encode(type(uint256).max));
         }
         for (uint256 i; i < upkeepsLen;) {
@@ -295,7 +296,22 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function getStationUpkeepID() external view returns (uint256) {
-        return s_stationUpkeepId;
+        return s_stationUpkeepID;
+    }
+
+    /// @inheritdoc IAutomationStation
+    function getForwarder() external view returns (address) {
+        return address(s_forwarder);
+    }
+
+    /// @inheritdoc IAutomationStation
+    function getRegistrar() external view returns (address) {
+        return s_registrar;
+    }
+
+    /// @inheritdoc IAutomationStation
+    function getRegisterUpkeepSelector() external view returns (bytes4) {
+        return s_registerUpkeepSelector;
     }
 
     /// @inheritdoc IAutomationStation

@@ -34,6 +34,34 @@ contract AutomationStationTest is Test {
         station.dismantle();
     }
 
+    function test_AutomationStation_setForwarder() public {
+        assertNotEq(station.getForwarder(), bob);
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.setForwarder(bob);
+        vm.prank(governor);
+        station.setForwarder(bob);
+        assertEq(station.getForwarder(), bob);
+    }
+
+    function test_AutomationStation_setRegistrar() public {
+        assertNotEq(station.getRegistrar(), bob);
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.setRegistrar(bob);
+        vm.prank(governor);
+        station.setRegistrar(bob);
+        assertEq(station.getRegistrar(), bob);
+    }
+
+    function test_AutomationStation_setRegisterUpkeepSelector() public {
+        bytes4 funcSelector = 0x69696969;
+        assertNotEq(station.getRegisterUpkeepSelector(), funcSelector);
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.setRegisterUpkeepSelector(funcSelector);
+        vm.prank(governor);
+        station.setRegisterUpkeepSelector(funcSelector);
+        assertEq(station.getRegisterUpkeepSelector(), funcSelector);
+    }
+
     function test__AutomationStation_setRefuelConfig() public {
         uint96 newRefuelAmount = 4 ether;
         uint96 newStationUpkeepMinBalance = 2 ether;

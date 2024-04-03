@@ -96,6 +96,15 @@ interface IAutomationStation {
     /// @return stationUpkeepID The station upkeep.
     function getStationUpkeepID() external view returns (uint256 stationUpkeepID);
 
+    /// @return forwarder The automation forwarder address.
+    function getForwarder() external view returns (address forwarder);
+
+    /// @return registrar The automation registrar address.
+    function getRegistrar() external view returns (address);
+
+    /// @return registerUpkeepSelector The function selector for registerUpkeep function of the registrar.
+    function getRegisterUpkeepSelector() external view returns (bytes4 registerUpkeepSelector);
+
     /**
      * @param upkeepIndex The index in the array of upkeeps.
      * @return upkeepId The ID of the upkeep at the specified index.
