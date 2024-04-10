@@ -5,6 +5,7 @@
 # hardhat
 artifacts
 cache
+scripts
 deployments
 node_modules
 coverage
