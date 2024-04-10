@@ -47,6 +47,13 @@ interface IAutomationStation {
     function forceStationRefuel(uint96 refuelAmount) external;
 
     /**
+     * @dev Forces the refuel of a registered upkeep with the specified amount.
+     * @param upkeepIndex The index in the s_upkeepIDs array of the upkeep to refuel
+     * @param refuelAmount The amount of LINK tokens to refuel.
+     */
+    function forceUpkeepRefuel(uint256 upkeepIndex, uint96 refuelAmount) external;
+
+    /**
      * @dev Register a new upkeep, add its upkeepID to the s_upkeepIDs array of the station if max auto-approval has not been hit.
      * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
      * @param registrationParams Encoded registration params.

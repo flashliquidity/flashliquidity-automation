@@ -34,6 +34,16 @@ contract AutomationStationTest is Test {
         station.dismantle();
     }
 
+    function test__AutomationStation_forceStationRefuelOnlyGovernor() public {
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.forceStationRefuel(5 ether);
+    }
+
+    function test__AutomationStation_forceUpkeepRefuelOnlyGovernor() public {
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.forceUpkeepRefuel(0, 5 ether);
+    }
+
     function test_AutomationStation_setForwarder() public {
         assertNotEq(station.getForwarder(), bob);
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);

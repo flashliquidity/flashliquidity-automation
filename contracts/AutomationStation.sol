@@ -144,6 +144,11 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
+    function forceUpkeepRefuel(uint256 upkeepIndex, uint96 refuelAmount) external onlyGovernor {
+        _getStationUpkeepRegistry().addFunds(s_upkeepIDs[upkeepIndex], refuelAmount);
+    }
+
+    /// @inheritdoc IAutomationStation
     function createUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
         uint256 upkeepID = _registerUpkeep(approveAmountLINK, registrationParams);
         if (upkeepID > 0) {
