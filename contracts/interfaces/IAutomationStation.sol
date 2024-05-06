@@ -3,6 +3,14 @@
 pragma solidity ^0.8.0;
 
 interface IAutomationStation {
+    /// @notice Represents the configuration settings for refueling upkeeps in the Automation Station.
+    /// @dev This struct holds settings that determine the behavior of the refueling process for upkeeps.
+    struct RefuelConfig {
+        uint96 refuelAmount; // The amount of LINK tokens to refuel an upkeep.
+        uint96 stationUpkeepMinBalance; // The minimum balance threshold for the station's upkeep.
+        uint32 minDelayNextRefuel; // The minimum delay time (in seconds) required between successive refuels. (station upkeep excluded)
+    }
+
     /**
      * @dev Initializes the station.
      * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
@@ -123,12 +131,7 @@ interface IAutomationStation {
 
     /**
      * @notice Retrieves the current refueling configuration settings for the Automation Station.
-     * @return refuelAmount The amount of LINK tokens currently set for each refuel operation.
-     * @return stationUpkeepMinBalance The current minimum balance in LINK tokens that an upkeep should maintain.
-     * @return minDelayNextRefuel The current minimum time interval (in seconds) required between consecutive refuel operations.
+     * @return refuelConfig RefuelConfig struct.
      */
-    function getRefuelConfig()
-        external
-        view
-        returns (uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextRefuel);
+    function getRefuelConfig() external view returns (RefuelConfig memory refuelConfig);
 }

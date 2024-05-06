@@ -12,4 +12,4 @@ AutomationStationTest:test__AutomationStation_forceUpkeepRefuelOnlyGovernor() (g
 AutomationStationTest:test__AutomationStation_initializeOnlyGovernor() (gas: 32551)
 AutomationStationTest:test__AutomationStation_recoverERC20() (gas: 155905)
 AutomationStationTest:test__AutomationStation_removeUpkeepOnlyGovernor() (gas: 31707)
-AutomationStationTest:test__AutomationStation_setRefuelConfig() (gas: 71658)
+AutomationStationTest:test__AutomationStation_setRefuelConfig() (gas: 72053)

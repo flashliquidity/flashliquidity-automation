@@ -76,18 +76,18 @@ contract AutomationStationTest is Test {
         uint96 newRefuelAmount = 4 ether;
         uint96 newStationUpkeepMinBalance = 2 ether;
         uint32 newMinDelayNextRefuel = 4 hours;
-        (uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextRefuel) = station.getRefuelConfig();
-        assertNotEq(refuelAmount, newRefuelAmount);
-        assertNotEq(stationUpkeepMinBalance, newStationUpkeepMinBalance);
-        assertNotEq(minDelayNextRefuel, newMinDelayNextRefuel);
+        AutomationStation.RefuelConfig memory refuelConfig = station.getRefuelConfig();
+        assertNotEq(refuelConfig.refuelAmount, newRefuelAmount);
+        assertNotEq(refuelConfig.stationUpkeepMinBalance, newStationUpkeepMinBalance);
+        assertNotEq(refuelConfig.minDelayNextRefuel, newMinDelayNextRefuel);
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
         station.setRefuelConfig(newRefuelAmount, newStationUpkeepMinBalance, newMinDelayNextRefuel);
         vm.prank(governor);
         station.setRefuelConfig(newRefuelAmount, newStationUpkeepMinBalance, newMinDelayNextRefuel);
-        (refuelAmount, stationUpkeepMinBalance, minDelayNextRefuel) = station.getRefuelConfig();
-        assertEq(refuelAmount, newRefuelAmount);
-        assertEq(stationUpkeepMinBalance, newStationUpkeepMinBalance);
-        assertEq(minDelayNextRefuel, newMinDelayNextRefuel);
+        refuelConfig = station.getRefuelConfig();
+        assertEq(refuelConfig.refuelAmount, newRefuelAmount);
+        assertEq(refuelConfig.stationUpkeepMinBalance, newStationUpkeepMinBalance);
+        assertEq(refuelConfig.minDelayNextRefuel, newMinDelayNextRefuel);
     }
 
     function test__AutomationStation_addUpkeepOnlyGovernor() public {

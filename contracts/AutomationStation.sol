@@ -31,14 +31,6 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     error AutomationStation__TooEarlyForNextRefuel();
     error AutomationStation__NotFromForwarder();
 
-    /// @notice Represents the configuration settings for refueling upkeeps in the Automation Station.
-    /// @dev This struct holds settings that determine the behavior of the refueling process for upkeeps.
-    struct RefuelConfig {
-        uint96 refuelAmount; // The amount of LINK tokens to refuel an upkeep.
-        uint96 stationUpkeepMinBalance; // The minimum balance threshold for the station's upkeep.
-        uint32 minDelayNextRefuel; // The minimum delay time (in seconds) required between successive refuels. (station upkeep excluded)
-    }
-
     /// @dev Reference to the LinkTokenInterface, used for LINK token interactions.
     LinkTokenInterface public immutable i_linkToken;
     /// @dev Refueling configuration for upkeeps.
@@ -330,8 +322,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function getRefuelConfig() external view returns (uint96, uint96, uint32) {
-        RefuelConfig memory config = s_refuelConfig;
-        return (config.refuelAmount, config.stationUpkeepMinBalance, config.minDelayNextRefuel);
+    function getRefuelConfig() external view returns (RefuelConfig memory) {
+        return s_refuelConfig;
     }
 }
