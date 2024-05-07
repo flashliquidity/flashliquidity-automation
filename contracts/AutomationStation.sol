@@ -49,6 +49,8 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     mapping(uint256 upkeepID => uint256 lastRefuelTimestamp) private s_lastRefuelTimestamp;
 
     event UpkeepRegistered(uint256 upkeepID);
+    event UpkeepUnregistered(uint256 upkeepID);
+    event UpkeepsAdded(uint256[] upkeepIDs);
     event UpkeepRemoved(uint256 upkeepID);
     event UpkeepsMigrated(address indexed oldRegistry, address indexed newRegistry, uint256[] upkeepIDs);
     event StationDismantled(uint256 stationUpkeepID);
@@ -141,12 +143,26 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function createUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
+    function registerUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
         uint256 upkeepID = _registerUpkeep(approveAmountLINK, registrationParams);
         if (upkeepID > 0) {
             s_upkeepIDs.push(upkeepID);
             emit UpkeepRegistered(upkeepID);
         }
+    }
+
+    /// @inheritdoc IAutomationStation
+    function unregisterUpkeep(uint256 upkeepIndex) external onlyGovernor {
+        /*         uint256 upkeepsLen = s_upkeepIDs.length;
+        if (upkeepsLen == 0) revert AutomationStation__NoRegisteredUpkeep();
+        uint256 upkeepID = s_upkeepIDs[upkeepIndex];
+        if (upkeepIndex < upkeepsLen - 1) {
+            s_upkeepIDs[upkeepIndex] = s_upkeepIDs[upkeepsLen - 1];
+        }
+        s_upkeepIDs.pop(); */
+        uint256 upkeepID = _removeUpkeep(upkeepIndex);
+        _getStationUpkeepRegistry().cancelUpkeep(upkeepID);
+        emit UpkeepUnregistered(upkeepID);
     }
 
     /// @inheritdoc IAutomationStation
@@ -156,20 +172,15 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         for (uint256 i; i < upkeepsLen;) {
             upkeepID = upkeepIDs[i];
             s_upkeepIDs.push(upkeepID);
-            emit UpkeepRegistered(upkeepID);
+            unchecked {
+                ++i;
+            }
         }
+        emit UpkeepsAdded(upkeepIDs);
     }
 
-    /// @inheritdoc IAutomationStation
     function removeUpkeep(uint256 upkeepIndex) external onlyGovernor {
-        uint256 upkeepsLen = s_upkeepIDs.length;
-        if (upkeepsLen == 0) revert AutomationStation__NoRegisteredUpkeep();
-        uint256 upkeepID = s_upkeepIDs[upkeepIndex];
-        if (upkeepIndex < upkeepsLen - 1) {
-            s_upkeepIDs[upkeepIndex] = s_upkeepIDs[upkeepsLen - 1];
-        }
-        s_upkeepIDs.pop();
-        _getStationUpkeepRegistry().cancelUpkeep(upkeepID);
+        uint256 upkeepID = _removeUpkeep(upkeepIndex);
         emit UpkeepRemoved(upkeepID);
     }
 
@@ -261,6 +272,17 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             registrar.call(bytes.concat(s_registerUpkeepSelector, registrationParams));
         if (!success) revert AutomationStation__UpkeepRegistrationFailed();
         return abi.decode(returnData, (uint256));
+    }
+
+    function _removeUpkeep(uint256 upkeepIndex) internal returns (uint256) {
+        uint256 upkeepsLen = s_upkeepIDs.length;
+        if (upkeepsLen == 0) revert AutomationStation__NoRegisteredUpkeep();
+        uint256 upkeepID = s_upkeepIDs[upkeepIndex];
+        if (upkeepIndex < upkeepsLen - 1) {
+            s_upkeepIDs[upkeepIndex] = s_upkeepIDs[upkeepsLen - 1];
+        }
+        s_upkeepIDs.pop();
+        return upkeepID;
     }
 
     function _getStationUpkeepRegistry() internal view returns (IAutomationRegistryConsumer registry) {

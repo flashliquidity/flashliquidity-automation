@@ -44,7 +44,7 @@ contract AutomationStationTest is Test {
         station.forceUpkeepRefuel(0, 5 ether);
     }
 
-    function test_AutomationStation_setForwarder() public {
+    function test__AutomationStation_setForwarder() public {
         assertNotEq(station.getForwarder(), bob);
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
         station.setForwarder(bob);
@@ -53,7 +53,7 @@ contract AutomationStationTest is Test {
         assertEq(station.getForwarder(), bob);
     }
 
-    function test_AutomationStation_setRegistrar() public {
+    function test__AutomationStation_setRegistrar() public {
         assertNotEq(station.getRegistrar(), bob);
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
         station.setRegistrar(bob);
@@ -62,7 +62,7 @@ contract AutomationStationTest is Test {
         assertEq(station.getRegistrar(), bob);
     }
 
-    function test_AutomationStation_setRegisterUpkeepSelector() public {
+    function test__AutomationStation_setRegisterUpkeepSelector() public {
         bytes4 funcSelector = 0x69696969;
         assertNotEq(station.getRegisterUpkeepSelector(), funcSelector);
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
@@ -90,14 +90,39 @@ contract AutomationStationTest is Test {
         assertEq(refuelConfig.minDelayNextRefuel, newMinDelayNextRefuel);
     }
 
-    function test__AutomationStation_addUpkeepOnlyGovernor() public {
+    function test__AutomationStation_registerUpkeepOnlyGovernor() public {
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
-        station.createUpkeep(5 ether, new bytes(0));
+        station.registerUpkeep(5 ether, new bytes(0));
     }
 
-    function test__AutomationStation_removeUpkeepOnlyGovernor() public {
+    function test__AutomationStation_unregisterUpkeepOnlyGovernor() public {
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.unregisterUpkeep(0);
+    }
+
+    function test__AutomationStation_addUpkeeps() public {
+        uint256[] memory upkeepIDs = new uint256[](1);
+        upkeepIDs[0] = 69;
+        assertEq(station.allUpkeepsLength(), 0);
+        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        station.addUpkeeps(upkeepIDs);
+        vm.prank(governor);
+        station.addUpkeeps(upkeepIDs);
+        assertEq(station.allUpkeepsLength(), 1);
+    }
+
+    function test__AutomationStation_removeUpkeep() public {
+        uint256[] memory upkeepIDs = new uint256[](1);
+        upkeepIDs[0] = 69;
         vm.expectRevert(Governable.Governable__NotAuthorized.selector);
         station.removeUpkeep(0);
+        vm.startPrank(governor);
+        vm.expectRevert(AutomationStation.AutomationStation__NoRegisteredUpkeep.selector);
+        station.removeUpkeep(0);
+        station.addUpkeeps(upkeepIDs);
+        station.removeUpkeep(0);
+        vm.stopPrank();
+        assertEq(station.allUpkeepsLength(), 0);
     }
 
     function test__AutomationStation_recoverERC20() public {

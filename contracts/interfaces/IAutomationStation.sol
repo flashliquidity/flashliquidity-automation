@@ -66,16 +66,23 @@ interface IAutomationStation {
      * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
      * @param registrationParams Encoded registration params.
      */
-    function createUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external;
+    function registerUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external;
+
+    /**
+     * @dev Removes an upkeep from the station by its index and calls cancelUpkeep in the Chainlink Automation Registry.
+     * @param upkeepIndex The index of the upkeep in the station's array.
+     */
+    function unregisterUpkeep(uint256 upkeepIndex) external;
 
     /**
      * @dev Add multiple upkeep to the s_upkeepIDs array of the station.
      * @param upkeepIDs Array of upkeep IDs to be added.
      */
     function addUpkeeps(uint256[] calldata upkeepIDs) external;
+
     /**
-     * @dev Removes an upkeep from the station by its index.
-     * @param upkeepIndex The index of the upkeep in the station's array.
+     * Remove an upkeep from the s_upkeepIDs array of the station.
+     * @param upkeepIndex The index of the upkeep in the station's array to be removed.
      */
     function removeUpkeep(uint256 upkeepIndex) external;
 

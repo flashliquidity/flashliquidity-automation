@@ -73,10 +73,10 @@ contract AutomationStationIntegrationTest is Test {
         assertNotEq(station.getStationUpkeepID(), 0);
     }
 
-    function testIntegration__AutomationStation_addUpkeep() public {
+    function testIntegration__AutomationStation_registerUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.createUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(5 ether, registrationParams);
         vm.stopPrank();
         assertEq(station.allUpkeepsLength(), 1);
         assertNotEq(station.getUpkeepIdAtIndex(0), 0);
@@ -85,10 +85,10 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_cancelAndWithdrawUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.createUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(5 ether, registrationParams);
         uint256[] memory upkeepIDs = new uint256[](1);
         upkeepIDs[0] = station.getUpkeepIdAtIndex(0);
-        station.removeUpkeep(0);
+        station.unregisterUpkeep(0);
         vm.stopPrank();
         vm.roll(block.number + 50);
         station.withdrawUpkeeps(upkeepIDs);
@@ -99,7 +99,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_checkUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 8 ether);
-        station.createUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(5 ether, registrationParams);
         (bool upkeepNeeded, bytes memory performData) = station.checkUpkeep(new bytes(0));
         assertFalse(upkeepNeeded);
         station.setRefuelConfig(2 ether, 6 ether, 6 hours);
