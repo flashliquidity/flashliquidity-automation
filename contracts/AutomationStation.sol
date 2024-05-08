@@ -153,13 +153,6 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc IAutomationStation
     function unregisterUpkeep(uint256 upkeepIndex) external onlyGovernor {
-        /*         uint256 upkeepsLen = s_upkeepIDs.length;
-        if (upkeepsLen == 0) revert AutomationStation__NoRegisteredUpkeep();
-        uint256 upkeepID = s_upkeepIDs[upkeepIndex];
-        if (upkeepIndex < upkeepsLen - 1) {
-            s_upkeepIDs[upkeepIndex] = s_upkeepIDs[upkeepsLen - 1];
-        }
-        s_upkeepIDs.pop(); */
         uint256 upkeepID = _removeUpkeep(upkeepIndex);
         _getStationUpkeepRegistry().cancelUpkeep(upkeepID);
         emit UpkeepUnregistered(upkeepID);
