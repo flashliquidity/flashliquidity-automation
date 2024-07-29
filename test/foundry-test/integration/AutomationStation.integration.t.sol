@@ -6,7 +6,6 @@ import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AutomationStation} from "../../../contracts/AutomationStation.sol";
-import {Governable} from "flashliquidity-acs/contracts/Governable.sol";
 
 contract AutomationStationIntegrationTest is Test {
     AutomationStation station;
@@ -37,14 +36,15 @@ contract AutomationStationIntegrationTest is Test {
 
     function setUp() public {
         vm.createSelectFork("https://rpc.ankr.com/polygon");
+        vm.prank(governor);
         station = new AutomationStation(
-            governor,
             address(linkToken),
             registrar,
             registerUpkeepSelector,
             refuelAmount,
             stationUpkeepMinBalance,
-            minDelayNextRefuel
+            minDelayNextRefuel,
+            type(uint256).max
         );
         registrationParams = abi.encode(
             RegistrationParams({
@@ -64,11 +64,7 @@ contract AutomationStationIntegrationTest is Test {
         IERC20(linkToken).transfer(governor, 100 ether);
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.initialize(5 ether, registrationParams);
-        (bool success, bytes memory returnData) =
-            registry.staticcall(abi.encodeWithSignature("getForwarder(uint256)", station.getStationUpkeepID()));
-        if (!success) revert();
-        station.setForwarder(abi.decode(returnData, (address)));
+        station.initialize(registry, registrationParams);
         vm.stopPrank();
         assertNotEq(station.getStationUpkeepID(), 0);
     }
@@ -76,7 +72,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_registerUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.registerUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(registrationParams);
         vm.stopPrank();
         assertEq(station.allUpkeepsLength(), 1);
         assertNotEq(station.getUpkeepIdAtIndex(0), 0);
@@ -85,7 +81,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_cancelAndWithdrawUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 5 ether);
-        station.registerUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(registrationParams);
         uint256[] memory upkeepIDs = new uint256[](1);
         upkeepIDs[0] = station.getUpkeepIdAtIndex(0);
         station.unregisterUpkeep(0);
@@ -99,7 +95,7 @@ contract AutomationStationIntegrationTest is Test {
     function testIntegration__AutomationStation_checkUpkeep() public {
         vm.startPrank(governor);
         IERC20(linkToken).transfer(address(station), 8 ether);
-        station.registerUpkeep(5 ether, registrationParams);
+        station.registerUpkeep(registrationParams);
         (bool upkeepNeeded, bytes memory performData) = station.checkUpkeep(new bytes(0));
         assertFalse(upkeepNeeded);
         station.setRefuelConfig(2 ether, 6 ether, 6 hours);

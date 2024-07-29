@@ -6,47 +6,49 @@ import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
 import {AutomationStation} from "../../../contracts/AutomationStation.sol";
-import {Governable} from "flashliquidity-acs/contracts/Governable.sol";
 
 contract AutomationStationTest is Test {
     AutomationStation station;
     ERC20Mock linkToken;
     address governor = makeAddr("governor");
     address bob = makeAddr("bob");
+    address registry = makeAddr("registry");
     address registrar = makeAddr("registrar");
+    bytes revertNotOwnerMsg = "Ownable: caller is not the owner";
     bytes4 registerUpkeepSelector = 0x3f678e11;
 
     function setUp() public {
         linkToken = new ERC20Mock("MockLINK", "LINK");
         linkToken.mintTo(governor, 100 ether);
+        vm.prank(governor);
         station = new AutomationStation(
-            governor, address(linkToken), registrar, registerUpkeepSelector, 2 ether, 1 ether, 6 hours
+            address(linkToken), registrar, registerUpkeepSelector, 2 ether, 1 ether, 6 hours, type(uint256).max
         );
     }
 
     function test__AutomationStation_initializeOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
-        station.initialize(5 ether, new bytes(0));
+        vm.expectRevert(revertNotOwnerMsg);
+        station.initialize(registry, new bytes(0));
     }
 
     function test__AutomationStation_dismantleOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.dismantle();
     }
 
     function test__AutomationStation_forceStationRefuelOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.forceStationRefuel(5 ether);
     }
 
     function test__AutomationStation_forceUpkeepRefuelOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.forceUpkeepRefuel(0, 5 ether);
     }
 
     function test__AutomationStation_setForwarder() public {
         assertNotEq(station.getForwarder(), bob);
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.setForwarder(bob);
         vm.prank(governor);
         station.setForwarder(bob);
@@ -55,7 +57,7 @@ contract AutomationStationTest is Test {
 
     function test__AutomationStation_setRegistrar() public {
         assertNotEq(station.getRegistrar(), bob);
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.setRegistrar(bob);
         vm.prank(governor);
         station.setRegistrar(bob);
@@ -65,7 +67,7 @@ contract AutomationStationTest is Test {
     function test__AutomationStation_setRegisterUpkeepSelector() public {
         bytes4 funcSelector = 0x69696969;
         assertNotEq(station.getRegisterUpkeepSelector(), funcSelector);
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.setRegisterUpkeepSelector(funcSelector);
         vm.prank(governor);
         station.setRegisterUpkeepSelector(funcSelector);
@@ -80,7 +82,7 @@ contract AutomationStationTest is Test {
         assertNotEq(refuelConfig.refuelAmount, newRefuelAmount);
         assertNotEq(refuelConfig.stationUpkeepMinBalance, newStationUpkeepMinBalance);
         assertNotEq(refuelConfig.minDelayNextRefuel, newMinDelayNextRefuel);
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.setRefuelConfig(newRefuelAmount, newStationUpkeepMinBalance, newMinDelayNextRefuel);
         vm.prank(governor);
         station.setRefuelConfig(newRefuelAmount, newStationUpkeepMinBalance, newMinDelayNextRefuel);
@@ -91,12 +93,12 @@ contract AutomationStationTest is Test {
     }
 
     function test__AutomationStation_registerUpkeepOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
-        station.registerUpkeep(5 ether, new bytes(0));
+        vm.expectRevert(revertNotOwnerMsg);
+        station.registerUpkeep(new bytes(0));
     }
 
     function test__AutomationStation_unregisterUpkeepOnlyGovernor() public {
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.unregisterUpkeep(0);
     }
 
@@ -104,7 +106,7 @@ contract AutomationStationTest is Test {
         uint256[] memory upkeepIDs = new uint256[](1);
         upkeepIDs[0] = 69;
         assertEq(station.allUpkeepsLength(), 0);
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.addUpkeeps(upkeepIDs);
         vm.prank(governor);
         station.addUpkeeps(upkeepIDs);
@@ -114,7 +116,7 @@ contract AutomationStationTest is Test {
     function test__AutomationStation_removeUpkeep() public {
         uint256[] memory upkeepIDs = new uint256[](1);
         upkeepIDs[0] = 69;
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.removeUpkeep(0);
         vm.startPrank(governor);
         vm.expectRevert(AutomationStation.AutomationStation__NoRegisteredUpkeep.selector);
@@ -130,7 +132,7 @@ contract AutomationStationTest is Test {
         uint256[] memory amounts = new uint256[](1);
         tokens[0] = address(linkToken);
         amounts[0] = 1 ether;
-        vm.expectRevert(Governable.Governable__NotAuthorized.selector);
+        vm.expectRevert(revertNotOwnerMsg);
         station.recoverERC20(bob, tokens, amounts);
         vm.startPrank(governor);
         linkToken.transfer(address(station), 1 ether);

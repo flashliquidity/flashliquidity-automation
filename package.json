@@ -18,9 +18,8 @@
     "format-check": "forge fmt --check"
   },
   "dependencies": {
-    "@chainlink/contracts": "^1.0.0",
-    "@openzeppelin/contracts": "4.9.3",
-    "flashliquidity-acs": "0.0.7"
+    "@chainlink/contracts": "^1.2.0",
+    "@openzeppelin/contracts": "4.9.3"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.5",

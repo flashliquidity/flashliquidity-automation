@@ -13,10 +13,11 @@ interface IAutomationStation {
 
     /**
      * @dev Initializes the station.
-     * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
+     * @param registry Chainlink Automation Registry address, if non-zero the Chainlink Automation forwarder will be also set automatically.
      * @param registrationParams Encoded registration params.
+     * @return stationUpkeepID New upkeep ID of the station.
      */
-    function initialize(uint256 approveAmountLINK, bytes calldata registrationParams) external;
+    function initialize(address registry, bytes calldata registrationParams) external returns (uint256 stationUpkeepID);
 
     /// @dev Dismantles the station by canceling the station upkeep.
     function dismantle() external;
@@ -33,13 +34,15 @@ interface IAutomationStation {
     /**
      * @notice Updates the configuration settings for refueling upkeeps in the Automation Station.
      * @dev Sets the new refueling configuration for the station. This includes the amount of tokens for refueling,
-     *      the minimum balance threshold for upkeeps, and the minimum delay between refuels.
+     *      the minimum balance threshold for the main station upkeep, and the minimum delay between consecutive refuels for a registered upkeep (main station upkeep excluded).
      * @param refuelAmount The amount of tokens (e.g., LINK) to be used for each refuel operation.
      * @param stationUpkeepMinBalance The minimum balance of the station upkeep.
      * @param minDelayNextReful The minimum time interval (in seconds) required between consecutive refuel operations.
      */
     function setRefuelConfig(uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextReful) external;
 
+    /// @param amount The amount of LINK tokens to approve to the Chainlink Automation Registrar.
+    function approveLinkToRegistrar(uint256 amount) external;
     /**
      * @dev Recovers ERC20 tokens sent to the contract.
      * @param to Address to send the recovered tokens.
@@ -56,17 +59,17 @@ interface IAutomationStation {
 
     /**
      * @dev Forces the refuel of a registered upkeep with the specified amount.
-     * @param upkeepIndex The index in the s_upkeepIDs array of the upkeep to refuel
+     * @param upkeepID The ID of the upkeep to refuel.
      * @param refuelAmount The amount of LINK tokens to refuel.
      */
-    function forceUpkeepRefuel(uint256 upkeepIndex, uint96 refuelAmount) external;
+    function forceUpkeepRefuel(uint256 upkeepID, uint96 refuelAmount) external;
 
     /**
      * @dev Register a new upkeep, add its upkeepID to the s_upkeepIDs array of the station if max auto-approval has not been hit.
-     * @param approveAmountLINK Amount of LINK tokens approved to the registrar, must be equal or greater of the amount encoded in the registrationParams.
      * @param registrationParams Encoded registration params.
+     * @return upkeepID ID of the new upkeep registered.
      */
-    function registerUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external;
+    function registerUpkeep(bytes calldata registrationParams) external returns (uint256 upkeepID);
 
     /**
      * @dev Removes an upkeep from the station by its index and calls cancelUpkeep in the Chainlink Automation Registry.
@@ -107,10 +110,14 @@ interface IAutomationStation {
     /**
      * @notice Migrate a batch of upkeeps from an old registry to a new one.
      * @param oldRegistry The address of the current registry holding the upkeeps.
-     * @param newRegistry The address of the new registry to which the upkeeps will be transferred.
+     * @param newRegistry The address of the new registry to which the upkeeps will be migrated.
      * @param upkeepIDs An array of `uint256` IDs representing the upkeeps to be migrated.
      */
     function migrateUpkeeps(address oldRegistry, address newRegistry, uint256[] calldata upkeepIDs) external;
+
+    /// @notice Migrate all station upkeeps to a new Chainlink Automation registry.
+    /// @param newRegistry The address of the new registry to which the upkeeps will be migrated.
+    function autoMigrate(address newRegistry) external;
 
     /// @return stationUpkeepRegistry The address of the station upkeep registry.
     function getStationUpkeepRegistry() external view returns (address stationUpkeepRegistry);

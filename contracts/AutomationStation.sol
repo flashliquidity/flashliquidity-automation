@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {IAutomationRegistryConsumer} from
     "@chainlink/contracts/src/v0.8/automation/interfaces/IAutomationRegistryConsumer.sol";
@@ -11,15 +12,16 @@ import {AutomationCompatibleInterface} from
 import {IAutomationForwarder} from "@chainlink/contracts/src/v0.8/automation/interfaces/IAutomationForwarder.sol";
 import {MigratableKeeperRegistryInterfaceV2} from
     "@chainlink/contracts/src/v0.8/automation/interfaces/MigratableKeeperRegistryInterfaceV2.sol";
-import {Governable} from "flashliquidity-acs/contracts/Governable.sol";
 import {IAutomationStation} from "./interfaces/IAutomationStation.sol";
 
 /**
  * @title AutomationStation
  * @author Oddcod3 (@oddcod3)
- * @notice This contract is used for managing upkeeps in the Chainlink Automation Network.
+ * @notice This contract provides a single entry point for managing multiple upkeeps in the Chainlink Automation Network.
+ * @notice It supports programmatic registration, unregistration, pausing/unpausing and migration of upkeeps.
+ * @notice Additionally, it enables automated funding to ensure all managed upkeeps maintain the required minimum balance for continued operation.
  */
-contract AutomationStation is IAutomationStation, AutomationCompatibleInterface, Governable {
+contract AutomationStation is IAutomationStation, AutomationCompatibleInterface, Ownable2Step {
     using SafeERC20 for IERC20;
 
     error AutomationStation__AlreadyInitialized();
@@ -31,19 +33,20 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     error AutomationStation__TooEarlyForNextRefuel();
     error AutomationStation__NotFromForwarder();
 
+    uint256 internal constant MAX_UINT256 = type(uint256).max;
     /// @dev Reference to the LinkTokenInterface, used for LINK token interactions.
     LinkTokenInterface public immutable i_linkToken;
     /// @dev Refueling configuration for upkeeps.
     RefuelConfig private s_refuelConfig;
-    /// @dev Automation forwarder for the station upkeep.
+    /// @dev Chainlink Automation forwarder of the station upkeep.
     IAutomationForwarder private s_forwarder;
-    /// @dev Automation registrar address
+    /// @dev Chainlink Automation Registrar address.
     address private s_registrar;
-    /// @dev Function selector of the registrar registerUpkeep function.
+    /// @dev Chainlink Automation Registrar registerUpkeep function selector.
     bytes4 private s_registerUpkeepSelector;
-    /// @dev An array of upkeep IDs managed by this station, allowing tracking and management of multiple upkeeps.
+    /// @dev Array of upkeep IDs managed by this station.
     uint256[] private s_upkeepIDs;
-    /// @dev Unique identifier for this station's upkeep registered in the Chainlink Automation Network.
+    /// @dev ID of the station upkeep.
     uint256 private s_stationUpkeepID;
     /// @dev Mapping from upkeep ID to last refuel timestamp.
     mapping(uint256 upkeepID => uint256 lastRefuelTimestamp) private s_lastRefuelTimestamp;
@@ -58,14 +61,14 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     event ForwarderChanged(address newForwarder);
 
     constructor(
-        address governor,
         address linkToken,
         address registrar,
         bytes4 registerUpkeepSelector,
         uint96 refuelAmount,
         uint96 stationUpkeepMinBalance,
-        uint32 minDelayNextRefuel
-    ) Governable(governor) {
+        uint32 minDelayNextRefuel,
+        uint256 approveLinkAmount
+    ) Ownable2Step() {
         i_linkToken = LinkTokenInterface(linkToken);
         s_registerUpkeepSelector = registerUpkeepSelector;
         s_registrar = registrar;
@@ -74,16 +77,28 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             stationUpkeepMinBalance: stationUpkeepMinBalance,
             minDelayNextRefuel: minDelayNextRefuel
         });
+        if (approveLinkAmount > 0) i_linkToken.approve(registrar, approveLinkAmount);
     }
 
     /// @inheritdoc IAutomationStation
-    function initialize(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
+    function initialize(address registry, bytes calldata registrationParams) external onlyOwner returns (uint256 stationUpkeepID) {
         if (s_stationUpkeepID > 0) revert AutomationStation__AlreadyInitialized();
-        s_stationUpkeepID = _registerUpkeep(approveAmountLINK, registrationParams);
+        stationUpkeepID = _registerUpkeep(registrationParams);
+        if(stationUpkeepID == 0) return stationUpkeepID;
+        s_stationUpkeepID = stationUpkeepID;
+        if(registry != address(0)) {
+            (bool success, bytes memory returnData) =
+                registry.staticcall(abi.encodeWithSignature("getForwarder(uint256)", stationUpkeepID));
+            if (success) {
+                address forwarder = abi.decode(returnData, (address));
+                s_forwarder = IAutomationForwarder(forwarder);
+                emit ForwarderChanged(forwarder);
+            }
+        }
     }
 
     /// @inheritdoc IAutomationStation
-    function dismantle() external onlyGovernor {
+    function dismantle() external onlyOwner {
         uint256 stationUpkeepID = s_stationUpkeepID;
         if (stationUpkeepID == 0 || s_upkeepIDs.length > 0) revert AutomationStation__CannotDismantle();
         s_stationUpkeepID = 0;
@@ -92,26 +107,26 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function setForwarder(address forwarder) external onlyGovernor {
+    function setForwarder(address forwarder) external onlyOwner {
         s_forwarder = IAutomationForwarder(forwarder);
         emit ForwarderChanged(forwarder);
     }
 
     /// @inheritdoc IAutomationStation
-    function setRegistrar(address registrar) external onlyGovernor {
+    function setRegistrar(address registrar) external onlyOwner {
         s_registrar = registrar;
         emit RegistrarChanged(registrar);
     }
 
     /// @inheritdoc IAutomationStation
-    function setRegisterUpkeepSelector(bytes4 registerUpkeepSelector) external onlyGovernor {
+    function setRegisterUpkeepSelector(bytes4 registerUpkeepSelector) external onlyOwner {
         s_registerUpkeepSelector = registerUpkeepSelector;
     }
 
     /// @inheritdoc IAutomationStation
     function setRefuelConfig(uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextReful)
         external
-        onlyGovernor
+        onlyOwner
     {
         s_refuelConfig = RefuelConfig({
             refuelAmount: refuelAmount,
@@ -121,7 +136,12 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function recoverERC20(address to, address[] memory tokens, uint256[] memory amounts) external onlyGovernor {
+    function approveLinkToRegistrar(uint256 amount) external onlyOwner {
+        i_linkToken.approve(s_registrar, amount);
+    }
+
+    /// @inheritdoc IAutomationStation
+    function recoverERC20(address to, address[] memory tokens, uint256[] memory amounts) external onlyOwner {
         uint256 tokensLen = tokens.length;
         if (tokensLen != amounts.length) revert AutomationStation__InconsistentParamsLength();
         for (uint256 i; i < tokensLen;) {
@@ -133,18 +153,18 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function forceStationRefuel(uint96 refuelAmount) external onlyGovernor {
+    function forceStationRefuel(uint96 refuelAmount) external onlyOwner {
         _getStationUpkeepRegistry().addFunds(s_stationUpkeepID, refuelAmount);
     }
 
     /// @inheritdoc IAutomationStation
-    function forceUpkeepRefuel(uint256 upkeepIndex, uint96 refuelAmount) external onlyGovernor {
-        _getStationUpkeepRegistry().addFunds(s_upkeepIDs[upkeepIndex], refuelAmount);
+    function forceUpkeepRefuel(uint256 upkeepID, uint96 refuelAmount) external onlyOwner {
+        _getStationUpkeepRegistry().addFunds(upkeepID, refuelAmount);
     }
 
     /// @inheritdoc IAutomationStation
-    function registerUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams) external onlyGovernor {
-        uint256 upkeepID = _registerUpkeep(approveAmountLINK, registrationParams);
+    function registerUpkeep(bytes calldata registrationParams) external onlyOwner returns (uint256 upkeepID) {
+        upkeepID = _registerUpkeep(registrationParams);
         if (upkeepID > 0) {
             s_upkeepIDs.push(upkeepID);
             emit UpkeepRegistered(upkeepID);
@@ -152,14 +172,14 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function unregisterUpkeep(uint256 upkeepIndex) external onlyGovernor {
+    function unregisterUpkeep(uint256 upkeepIndex) external onlyOwner {
         uint256 upkeepID = _removeUpkeep(upkeepIndex);
         _getStationUpkeepRegistry().cancelUpkeep(upkeepID);
         emit UpkeepUnregistered(upkeepID);
     }
 
     /// @inheritdoc IAutomationStation
-    function addUpkeeps(uint256[] calldata upkeepIDs) external onlyGovernor {
+    function addUpkeeps(uint256[] calldata upkeepIDs) external onlyOwner {
         uint256 upkeepsLen = upkeepIDs.length;
         uint256 upkeepID;
         for (uint256 i; i < upkeepsLen;) {
@@ -172,13 +192,14 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         emit UpkeepsAdded(upkeepIDs);
     }
 
-    function removeUpkeep(uint256 upkeepIndex) external onlyGovernor {
+    /// @inheritdoc IAutomationStation
+    function removeUpkeep(uint256 upkeepIndex) external onlyOwner {
         uint256 upkeepID = _removeUpkeep(upkeepIndex);
         emit UpkeepRemoved(upkeepID);
     }
 
     /// @inheritdoc IAutomationStation
-    function pauseUpkeeps(uint256[] calldata upkeepIDs) external onlyGovernor {
+    function pauseUpkeeps(uint256[] calldata upkeepIDs) external onlyOwner {
         uint256 upkeepsLen = upkeepIDs.length;
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
         for (uint256 i; i < upkeepsLen;) {
@@ -190,7 +211,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function unpauseUpkeeps(uint256[] calldata upkeepIDs) external onlyGovernor {
+    function unpauseUpkeeps(uint256[] calldata upkeepIDs) external onlyOwner {
         uint256 upkeepsLen = upkeepIDs.length;
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
         for (uint256 i; i < upkeepsLen;) {
@@ -216,23 +237,41 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     /// @inheritdoc IAutomationStation
     function migrateUpkeeps(address oldRegistry, address newRegistry, uint256[] calldata upkeepIDs)
         external
-        onlyGovernor
+        onlyOwner
     {
         MigratableKeeperRegistryInterfaceV2(oldRegistry).migrateUpkeeps(upkeepIDs, newRegistry);
         emit UpkeepsMigrated(oldRegistry, newRegistry, upkeepIDs);
     }
 
+    /// @inheritdoc IAutomationStation
+    function autoMigrate(address newRegistry)
+        external
+        onlyOwner
+    {
+        uint256 upkeepsLen = s_upkeepIDs.length;
+        uint256[] memory upkeepIDs = new uint256[](upkeepsLen + 1);
+        for(uint256 i; i < upkeepsLen; ) {
+            upkeepIDs[i] = s_upkeepIDs[i];
+            unchecked {
+                ++i;
+            }
+        }
+        upkeepIDs[upkeepsLen] = s_stationUpkeepID;
+        address currentRegistry = address(_getStationUpkeepRegistry());
+        MigratableKeeperRegistryInterfaceV2(currentRegistry).migrateUpkeeps(upkeepIDs, newRegistry);
+        emit UpkeepsMigrated(currentRegistry, newRegistry, upkeepIDs);
+    }
+
     /// @inheritdoc AutomationCompatibleInterface
     function performUpkeep(bytes calldata performData) external {
-        IAutomationForwarder forwarder = s_forwarder;
-        if (msg.sender != address(forwarder)) revert AutomationStation__NotFromForwarder();
+        if (msg.sender != address(s_forwarder)) revert AutomationStation__NotFromForwarder();
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
         uint256 upkeepIndex = abi.decode(performData, (uint256));
         uint256 stationUpkeepID = s_stationUpkeepID;
         uint256 upkeepID;
         uint256 minBalance;
         RefuelConfig memory config = s_refuelConfig;
-        if (upkeepIndex == type(uint256).max) {
+        if (upkeepIndex == MAX_UINT256) {
             upkeepID = s_stationUpkeepID;
             minBalance = config.stationUpkeepMinBalance;
         } else {
@@ -243,26 +282,25 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
         if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
             revert AutomationStation__TooEarlyForNextRefuel();
         }
-        if (stationUpkeepID != upkeepID) s_lastRefuelTimestamp[upkeepID] = block.timestamp;
+        if (stationUpkeepID != upkeepID) {
+            if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
+                revert AutomationStation__TooEarlyForNextRefuel();
+            }
+            s_lastRefuelTimestamp[upkeepID] = block.timestamp;
+        }
         i_linkToken.approve(address(registry), config.refuelAmount);
         registry.addFunds(upkeepID, config.refuelAmount);
     }
 
     /**
      * @dev Internal function to register a new upkeep.
-     * @param approveAmountLINK Amount of LINK tokens approved to the registrar.
      * @param registrationParams Encoded registration params.
      * @return upkeepID The ID assigned to the newly registered upkeep.
-     * @notice This function reverts with `AutomationStation__UpkeepRegistrationFailed` if the registration returns a zero ID.
+     * @notice This function reverts with `AutomationStation__UpkeepRegistrationFailed` if the registration fails.
      */
-    function _registerUpkeep(uint256 approveAmountLINK, bytes calldata registrationParams)
-        internal
-        returns (uint256 upkeepID)
-    {
-        address registrar = s_registrar;
-        i_linkToken.approve(registrar, approveAmountLINK);
+    function _registerUpkeep(bytes calldata registrationParams) internal returns (uint256 upkeepID) {
         (bool success, bytes memory returnData) =
-            registrar.call(bytes.concat(s_registerUpkeepSelector, registrationParams));
+            s_registrar.call(bytes.concat(s_registerUpkeepSelector, registrationParams));
         if (!success) revert AutomationStation__UpkeepRegistrationFailed();
         return abi.decode(returnData, (uint256));
     }
@@ -284,12 +322,12 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
 
     /// @inheritdoc AutomationCompatibleInterface
     function checkUpkeep(bytes calldata) external view returns (bool upkeepNeeded, bytes memory performData) {
-        uint256 upkeepsLen = s_upkeepIDs.length;
-        uint256 upkeepID;
         IAutomationRegistryConsumer registry = _getStationUpkeepRegistry();
         if (registry.getBalance(s_stationUpkeepID) <= s_refuelConfig.stationUpkeepMinBalance) {
-            return (true, abi.encode(type(uint256).max));
+            return (true, abi.encode(MAX_UINT256));
         }
+        uint256 upkeepsLen = s_upkeepIDs.length;
+        uint256 upkeepID;
         for (uint256 i; i < upkeepsLen;) {
             upkeepID = s_upkeepIDs[i];
             if (registry.getBalance(upkeepID) <= registry.getMinBalance(upkeepID)) {
