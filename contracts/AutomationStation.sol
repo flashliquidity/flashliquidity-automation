@@ -279,9 +279,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             minBalance = registry.getMinBalance(upkeepID);
         }
         if (registry.getBalance(upkeepID) > minBalance) revert AutomationStation__RefuelNotNeeded();
-        if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
-            revert AutomationStation__TooEarlyForNextRefuel();
-        }
+
         if (stationUpkeepID != upkeepID) {
             if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
                 revert AutomationStation__TooEarlyForNextRefuel();
