@@ -3,6 +3,7 @@
 Automation station provides a single entry point for managing multiple upkeeps in the [Chainlink Automation Network](https://chain.link/automation).
 It supports programmatic registration, unregistration, pausing/unpausing and migration of upkeeps and enables automated funding to ensure all managed upkeeps maintain the required minimum balance for continued operation.
 
+
 ## Requirements
 
 - [foundry](https://book.getfoundry.sh/getting-started/installation)
@@ -46,7 +47,17 @@ When the arguments have been set, you can run the deployment script with:
 npx hardhat run scripts/initializeStation.ts --network arbitrum_sepolia
 ```
 
-## Compile Contracts
+### Upkeep Registration
+
+Once initialized, the station’s `registerUpkeep` function can be used to register a new Chainlink Automation upkeep. The newly registered upkeep will be monitored by the station to ensure it meets the minimum LINK token balance required for execution. If the balance falls below this threshold, the station will automatically use its own LINK token balance to increase the upkeep balance until it meets the required minimum.
+
+To register a new upkeep, you will need to edit the necessary parameters inside `scripts/registerUpkeep.ts` and run the script. Once again, in the encoded `registrationParams`, the `adminAddress` must be the address of the station itself. The station must also hold an amount of LINK tokens greater than or equal to the `amount` parameter encoded in the `registrationParams`, and the allowance of LINK tokens to the Chainlink Automation Registrar must also be greater than or equal to this amount.
+
+```
+npx hardhat run scripts/registerUpkeep.ts --network arbitrum_sepolia
+```
+
+## Compile Contract
 
 `yarn compile`
 
