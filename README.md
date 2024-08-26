@@ -60,14 +60,14 @@ Once initialized, the station’s `registerUpkeep` function can be used to regis
 To register a new upkeep run the hardhat task `registerUpkeep`.
 Available arguments:
 
--`name`: The name of the upkeep displayed in the Chainlink Automation UI
--`contract`: The address of your Automation-compatible contract
--`gasLimit`: The maximum gas limit that will be used for txns by this upkeep
--`triggerType`: 0 is Conditional upkeep, 1 is Log trigger upkeep, default: 0
--`checkData`: checkData is a static input that you can specify now which will be sent into your checkUpkeep or checkLog, see interface, default: 0x
--`triggerConfig`: The configuration for your upkeep. 0x for conditional upkeeps, default: 0x
--`offchainConfig`: Leave as 0x, or use this field to set a gas price threshold for your upkeep, defualt: 0x
--`amount`: The LINK token amount to fund the upkeep, default: 5 LINK tokens (18 decimals)
+- `name`: The name of the upkeep displayed in the Chainlink Automation UI
+- `contract`: The address of your Automation-compatible contract
+- `gasLimit`: The maximum gas limit that will be used for txns by this upkeep
+- `triggerType`: 0 is Conditional upkeep, 1 is Log trigger upkeep, default: 0
+- `checkData`: checkData is a static input that you can specify now which will be sent into your checkUpkeep or checkLog, see interface, default: 0x
+- `triggerConfig`: The configuration for your upkeep. 0x for conditional upkeeps, default: 0x
+- `offchainConfig`: Leave as 0x, or use this field to set a gas price threshold for your upkeep, defualt: 0x
+- `amount`: The LINK token amount to fund the upkeep, default: 5 LINK tokens (18 decimals)
 
 The station must hold an amount of LINK tokens greater than or equal to the `amount` argument and the allowance of LINK tokens to the Chainlink Automation Registrar must also be greater than or equal to this amount.
 
