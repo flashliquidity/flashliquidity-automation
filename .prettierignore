@@ -1,6 +1,7 @@
 node_modules
 artifacts
 cache
+contracts
 foundry-cache
 lib
 out
