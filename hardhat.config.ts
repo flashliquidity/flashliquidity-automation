@@ -33,12 +33,16 @@ const BASE_RPC = "https://mainnet.base.org" || process.env.BASE_RPC
 const BASE_SEPOLIA_RPC = "https://sepolia.base.org" || process.env.BASE_SEPOLIA_RPC
 const POLYGON_MAINNET_RPC = "https://rpc-mainnet.maticvigil.com" || process.env.POLYGON_MAINNET_RPC
 const POLYGON_AMOY_RPC = "https://rpc-amoy.polygon.technology" || process.env.POLYGON_AMOY_RPC
-const AVALANCHE_C_CHAIN_RPC = "https://api.avax.network/ext/bc/C/rpc" || process.env.AVALANCHE_C_CHAIN_RPC
-const AVALANCHE_FUJI_RPC = "https://api.avax-test.network/ext/bc/C/rpc" || process.env.AVALANCHE_FUJI_RPC
+const AVALANCHE_C_CHAIN_RPC =
+    "https://api.avax.network/ext/bc/C/rpc" || process.env.AVALANCHE_C_CHAIN_RPC
+const AVALANCHE_FUJI_RPC =
+    "https://api.avax-test.network/ext/bc/C/rpc" || process.env.AVALANCHE_FUJI_RPC
 const ARBITRUM_ONE_RPC = "https://arb1.arbitrum.io/rpc" || process.env.ARBITRUM_ONE_RPC
-const ARBITRUM_SEPOLIA_RPC = "https://sepolia-rollup.arbitrum.io/rpc" || process.env.ARBITRUM_TESTNET_RPC
+const ARBITRUM_SEPOLIA_RPC =
+    "https://sepolia-rollup.arbitrum.io/rpc" || process.env.ARBITRUM_TESTNET_RPC
 const BSC_RPC = "https://bsc-dataseed4.binance.org" || process.env.BSC_RPC
-const BSC_TESTNET_RPC = "https://data-seed-prebsc-2-s1.binance.org:8545" || process.env.BSC_TESTNET_RPC
+const BSC_TESTNET_RPC =
+    "https://data-seed-prebsc-2-s1.binance.org:8545" || process.env.BSC_TESTNET_RPC
 const FANTOM_RPC = "https://rpcapi.fantom.network" || process.env.FANTOM_RPC
 const FANTOM_TESTNET_RPC = "https://rpc.testnet.fantom.network" || process.env.FANTOM_TESTNET_RPC
 const OPTIMISM_RPC = "https://mainnet.optimism.io" || process.env.OPTIMISM_RPC
@@ -66,18 +70,18 @@ const config: HardhatUserConfig = {
             optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_KEY,
             optimisticSepolia: process.env.OPTIMISM_ETHERSCAN_KEY,
             gnosis: process.env.GNOSISSCAN_API_KEY,
-            chiado: process.env.GNOSISSCAN_API_KEY
+            chiado: process.env.GNOSISSCAN_API_KEY,
         },
         customChains: [
             {
-              network: "optimisticSepolia",
-              chainId: 11155420,
-              urls: {
-                apiURL: "https://sepolia.optimism.io",
-                browserURL: "https://sepolia-optimistic.etherscan.io"
-              }
-            }
-        ]
+                network: "optimisticSepolia",
+                chainId: 11155420,
+                urls: {
+                    apiURL: "https://sepolia.optimism.io",
+                    browserURL: "https://sepolia-optimistic.etherscan.io",
+                },
+            },
+        ],
     },
     networks: {
         mainnet: {
@@ -160,57 +164,57 @@ const config: HardhatUserConfig = {
             chainId: 56,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         bscTestnet: {
             url: BSC_TESTNET_RPC,
             chainId: 97,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         opera: {
             url: FANTOM_RPC,
             chainId: 250,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         ftmTestnet: {
             url: FANTOM_TESTNET_RPC,
             chainId: 4002,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         optimisticEthereum: {
             url: OPTIMISM_RPC,
             chainId: 10,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         optimisticSepolia: {
             url: OPTIMISM_SEPOLIA_RPC,
             chainId: 11155420,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         gnosis: {
             url: GNOSIS_RPC,
             chainId: 100,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
+            accounts: [PRIVATE_KEY],
         },
         chiado: {
             url: GNOSIS_TESTNET_RPC,
             chainId: 10200,
             live: true,
             saveDeployments: true,
-            accounts: [PRIVATE_KEY]
-        }
+            accounts: [PRIVATE_KEY],
+        },
     },
     solidity: {
         version: foundryConfig.profile.default.solc_version,

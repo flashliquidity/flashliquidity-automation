@@ -17,7 +17,9 @@ interface IAutomationStation {
      * @param registrationParams Encoded registration params.
      * @return stationUpkeepID New upkeep ID of the station.
      */
-    function initialize(address registry, bytes calldata registrationParams) external returns (uint256 stationUpkeepID);
+    function initialize(address registry, bytes calldata registrationParams)
+        external
+        returns (uint256 stationUpkeepID);
 
     /// @dev Dismantles the station by canceling the station upkeep.
     function dismantle() external;
@@ -33,7 +35,7 @@ interface IAutomationStation {
 
     /// @param stationUpkeepID The ID of the station main upkeep.
     function setStationUpkeepID(uint256 stationUpkeepID) external;
-    
+
     /**
      * @notice Updates the configuration settings for refueling upkeeps in the Automation Station.
      * @dev Sets the new refueling configuration for the station. This includes the amount of tokens for refueling,

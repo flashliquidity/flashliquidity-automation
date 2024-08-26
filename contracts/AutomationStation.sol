@@ -81,12 +81,16 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function initialize(address registry, bytes calldata registrationParams) external onlyOwner returns (uint256 stationUpkeepID) {
+    function initialize(address registry, bytes calldata registrationParams)
+        external
+        onlyOwner
+        returns (uint256 stationUpkeepID)
+    {
         if (s_stationUpkeepID > 0) revert AutomationStation__AlreadyInitialized();
         stationUpkeepID = _registerUpkeep(registrationParams);
-        if(stationUpkeepID == 0) return stationUpkeepID;
+        if (stationUpkeepID == 0) return stationUpkeepID;
         s_stationUpkeepID = stationUpkeepID;
-        if(registry != address(0)) {
+        if (registry != address(0)) {
             (bool success, bytes memory returnData) =
                 registry.staticcall(abi.encodeWithSignature("getForwarder(uint256)", stationUpkeepID));
             if (success) {
@@ -122,7 +126,7 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     function setRegisterUpkeepSelector(bytes4 registerUpkeepSelector) external onlyOwner {
         s_registerUpkeepSelector = registerUpkeepSelector;
     }
-    
+
     /// @inheritdoc IAutomationStation
     function setStationUpkeepID(uint256 stationUpkeepID) external onlyOwner {
         s_stationUpkeepID = stationUpkeepID;
@@ -249,13 +253,10 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     }
 
     /// @inheritdoc IAutomationStation
-    function autoMigrate(address newRegistry)
-        external
-        onlyOwner
-    {
+    function autoMigrate(address newRegistry) external onlyOwner {
         uint256 upkeepsLen = s_upkeepIDs.length;
         uint256[] memory upkeepIDs = new uint256[](upkeepsLen + 1);
-        for(uint256 i; i < upkeepsLen; ) {
+        for (uint256 i; i < upkeepsLen;) {
             upkeepIDs[i] = s_upkeepIDs[i];
             unchecked {
                 ++i;

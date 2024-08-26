@@ -1,0 +1,13 @@
+node_modules
+artifacts
+cache
+foundry-cache
+lib
+out
+package.json
+.prettierrc
+.env
+.env.example
+.lcov.info
+README.md
+deployments
