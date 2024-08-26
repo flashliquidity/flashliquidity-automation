@@ -1,9 +1,9 @@
 import { task } from "hardhat/config"
 
 task("recoverTokens", "Transfer tokens from the station")
-  .addParam<string>("to", "The recipient address")
-  .addParam<string>("token", "The address of the token to be transferred")
-  .addParam<number>("amount", "The amount to be transferred")
+  .addParam("to", "The recipient address")
+  .addParam("token", "The address of the token to be transferred")
+  .addParam("amount", "The amount to be transferred")
 	.setAction(async (taskArgs, { ethers }) => {
 		const station = await ethers.getContract("AutomationStation")
     const tokens = [taskArgs.token]

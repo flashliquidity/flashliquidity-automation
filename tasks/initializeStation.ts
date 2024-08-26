@@ -1,9 +1,9 @@
 import { task } from "hardhat/config"
 
 task("initialize", "Initialize the station by registering the main upkeep")
-	.addOptionalParam<string>("registry", "Chainlink Automation registry", "0x0000000000000000000000000000000000000000")
-	.addOptionalParam<bigint>("amount", "The LINK token amount to fund the station upkeep", 10000000000000000000n)
-  .addOptionalParam<number>("gasLimit", "The maximum gas limit that will be used for txns by the station upkeep", 750000)
+	.addOptionalParam("registry", "Chainlink Automation registry", "0x0000000000000000000000000000000000000000")
+	.addOptionalParam("amount", "The LINK token amount to fund the station upkeep", "10000000000000000000")
+  .addOptionalParam("gasLimit", "The maximum gas limit that will be used for txns by the station upkeep")
 	.setAction(async (taskArgs, { ethers }) => {
 		const station = await ethers.getContract("AutomationStation") 
     const stationAddr = await station.getAddress()
@@ -20,7 +20,7 @@ task("initialize", "Initialize the station by registering the main upkeep")
           "0x", 
           "0x", 
           "0x", 
-          taskArgs.amount
+          ethers.toBigInt(taskArgs.amount)
         ]
       ]
     )
