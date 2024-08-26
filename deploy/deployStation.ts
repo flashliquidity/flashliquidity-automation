@@ -1,6 +1,7 @@
-import { ethers } from 'hardhat'
+import {HardhatRuntimeEnvironment} from 'hardhat/types'
+import {DeployFunction} from 'hardhat-deploy/types'
 
-async function main() {
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const linkToken = '' // ERC 677 LINK TOKEN ADDRESS
   const registrar = '' // CHAINLINK AUTOMATION REGISTRAR ADDRESS
   const registerUpkeepSelector = '0x3f678e11' // CHAINLINK REGISTRAR registerUpkeep FUNCTION SELECTOR
@@ -8,21 +9,26 @@ async function main() {
   const stationUpkeepMinBalance = '1000000000000000000' // MINIMUM LINK BALANCE FOR MAIN STATION UPKEEP AFTER WHICH REFUEL IS NEEDED
   const minDelayNextRefuel = '600' // MINIMUM DELAY BETWEEN CONSECUTIVE REFUELS FOR AN UPKEEP (MAIN STATION UPKEEP EXCLUDED)
   const approveAmountLINK = '100000000000000000000' // INITIAL LINK ALLOWANCE TO CHAINLINK REGISTRAR
-  const AutomationStation = await ethers.getContractFactory('AutomationStation')
-  const station = await AutomationStation.deploy(
-    linkToken, 
-    registrar, 
-    registerUpkeepSelector, 
-    refuelAmount, 
-    stationUpkeepMinBalance, 
-    minDelayNextRefuel,
-    approveAmountLINK
-  )
-  await station.waitForDeployment()
-  console.log(`AutomationStation deployed to: ${station.target}`)
+
+  const {deployments, getNamedAccounts} = hre
+  const {deploy} = deployments
+  const {deployer} = await getNamedAccounts()
+
+  await deploy('AutomationStation', {
+    from: deployer,
+    args: [    
+      linkToken, 
+      registrar, 
+      registerUpkeepSelector, 
+      refuelAmount, 
+      stationUpkeepMinBalance, 
+      minDelayNextRefuel,
+      approveAmountLINK
+    ],
+    log: true,
+  })
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+export default func
+
+func.tags = ['AutomationStation']

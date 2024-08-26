@@ -122,6 +122,11 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
     function setRegisterUpkeepSelector(bytes4 registerUpkeepSelector) external onlyOwner {
         s_registerUpkeepSelector = registerUpkeepSelector;
     }
+    
+    /// @inheritdoc IAutomationStation
+    function setStationUpkeepID(uint256 stationUpkeepID) external onlyOwner {
+        s_stationUpkeepID = stationUpkeepID;
+    }
 
     /// @inheritdoc IAutomationStation
     function setRefuelConfig(uint96 refuelAmount, uint96 stationUpkeepMinBalance, uint32 minDelayNextReful)
@@ -279,7 +284,6 @@ contract AutomationStation is IAutomationStation, AutomationCompatibleInterface,
             minBalance = registry.getMinBalance(upkeepID);
         }
         if (registry.getBalance(upkeepID) > minBalance) revert AutomationStation__RefuelNotNeeded();
-
         if (stationUpkeepID != upkeepID) {
             if (block.timestamp - s_lastRefuelTimestamp[upkeepID] < config.minDelayNextRefuel) {
                 revert AutomationStation__TooEarlyForNextRefuel();
