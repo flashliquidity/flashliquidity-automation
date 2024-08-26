@@ -36,7 +36,7 @@ You can view the supported network for the deployment scripts inside hardhat.con
 ### Initialization
 
 After deploying the AutomationStation, you need to transfer enough LINK tokens to the station before initializing it. During the initialization process, the main station upkeep will be registered. This upkeep will automate monitoring all the other registered upkeeps to ensure they are not underfunded; if they are, it will add funds to their balance. 
-To initialize the station run the hardhat task `initialize.
+To initialize the station run the hardhat task `initialize`.
 Available arguments are all optional, if the registry address parameter is non-zero, the Automation forwarder of the station will be automatically set during initialization. Otherwise, you must set the forwarder before registering other upkeeps:
 
 - `registry`: The address of the Chainlink Automation Registry for the selected network, default is zero address (https://docs.chain.link/chainlink-automation/overview/supported-networks).
