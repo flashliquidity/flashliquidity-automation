@@ -50,7 +50,7 @@ npx hardhat initialize --network sepolia
 ```
 
 ```
-npx hardhat initialize --registry 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad --amount 5000000000000000000 --gasLimit 500000 --network sepolia
+npx hardhat initialize --registry 0x86EFBD0b6736Bed994962f9797049422A3A8E8Ad --amount 5000000000000000000 --gas-limit 500000 --network sepolia
 ```
 
 ### Upkeep Registration
@@ -74,11 +74,11 @@ The station must hold an amount of LINK tokens greater than or equal to the `amo
 Examples: 
 
 ```
-npx hardhat registerUpkeep --name test --contract 0x0dd...c0d3 --gasLimit 1000000 --network sepolia
+npx hardhat registerUpkeep --name test --contract 0x0dd...c0d3 --gas-limit 1000000 --network sepolia
 ```
 
 ```
-npx hardhat registerUpkeep --name test --contract 0x0dd...c0d3 --gasLimit 1000000 --triggerType 0 --checkData 0xbad...cod3 --amount 1000000000000000000 --network sepolia
+npx hardhat registerUpkeep --name test --contract 0x0dd...c0d3 --gas-limit 1000000 --trigger-type 0 --check-data 0xbad...cod3 --amount 1000000000000000000 --network sepolia
 ```
 
 ## Compile Contract
